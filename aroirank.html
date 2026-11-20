@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AroiRank - รีวิวอาหารเด็ด เรียงตามดาว พร้อมสั่ง GrabFood</title>
+    <!-- นำเข้า Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- นำเข้าฟอนต์ Prompt และ Inter จาก Google Fonts เพื่อความสวยงามและอ่านง่ายของภาษาไทย -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- นำเข้า Font Awesome สำหรับไอคอน -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Prompt', 'Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            orange: '#FF5722',
+                            amber: '#FFB300',
+                            grab: '#00B14F',
+                            grabDark: '#009643'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased selection:bg-orange-500 selection:text-white">
+
+    <!-- Navbar ด้านบน -->
+    <nav class="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- โลโก้เว็บ -->
+                <div class="flex items-center gap-2.5 cursor-pointer" onclick="resetFilters()">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-orange-600 to-amber-400 flex items-center justify-center text-white shadow-md shadow-orange-500/20">
+                        <i class="fa-solid fa-utensils text-lg"></i>
+                    </div>
+                    <div>
+                        <span class="font-bold text-xl tracking-tight text-slate-900">Aroi<span class="text-orange-600">Rank</span></span>
+                        <span class="hidden sm:inline-block text-xs bg-amber-100 text-amber-800 font-medium px-2 py-0.5 rounded-full ml-1.5">รีวิวตัวจริง</span>
+                    </div>
+                </div>
+
+                <!-- ปุ่มเพิ่มรีวิวร้านใหม่ -->
+                <div class="flex items-center gap-3">
+                    <button onclick="openAddReviewModal()" class="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-all shadow-sm active:scale-95">
+                        <i class="fa-solid fa-star text-amber-400"></i>
+                        <span>เขียนรีวิวร้าน</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ส่วน Hero & ช่องค้นหาหลัก -->
+    <header class="relative bg-gradient-to-br from-slate-900 via-slate-800 to-orange-950 text-white py-12 sm:py-16 px-4 overflow-hidden">
+        <!-- ลวดลายตกแต่งพื้นหลัง -->
+        <div class="absolute inset-0 opacity-10 pointer-events-none">
+            <div class="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-orange-500 blur-3xl"></div>
+            <div class="absolute -bottom-24 -left-24 w-96 h-96 rounded-full bg-amber-400 blur-3xl"></div>
+        </div>
+
+        <div class="relative max-w-4xl mx-auto text-center">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/15 text-amber-300 text-xs sm:text-sm font-medium mb-4">
+                <i class="fa-solid fa-ranking-star"></i>
+                <span>จัดอันดับความอร่อยตามคะแนนดาวจริง 100%</span>
+            </div>
+            <h1 class="text-3xl sm:text-5xl font-bold tracking-tight mb-4 leading-tight">
+                มื้อนี้กินอะไรดี? <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-orange-400">ค้นหาเมนูที่อยากกิน</span>
+            </h1>
+            <p class="text-slate-300 text-sm sm:text-base max-w-2xl mx-auto mb-8">
+                พิมพ์ชื่อเมนูหรือแนวอาหาร เช่น <span class="text-white font-medium underline decoration-orange-500">"กะเพรา"</span> ระบบจะเรียงร้านที่ได้ดาวเยอะที่สุดให้ทันที พร้อมราคา เวลาเปิด-ปิด และกดสั่ง GrabFood ได้เลย!
+            </p>
+
+            <!-- กล่องค้นหา -->
+            <div class="max-w-2xl mx-auto">
+                <div class="relative flex items-center bg-white rounded-2xl p-2 shadow-xl shadow-black/25 focus-within:ring-4 focus-within:ring-orange-500/30 transition-all">
+                    <div class="pl-3 pr-2 text-slate-400">
+                        <i class="fa-solid fa-magnifying-glass text-lg"></i>
+                    </div>
+                    <input 
+                        type="text" 
+                        id="searchInput" 
+                        placeholder="อยากกินอะไรพิมพ์เลย... เช่น กะเพรา, ก๋วยเตี๋ยว, ข้าวมันไก่, ชาบู" 
+                        class="w-full py-2.5 px-2 text-slate-800 placeholder-slate-400 bg-transparent focus:outline-none text-sm sm:text-base"
+                        oninput="handleSearch()"
+                    >
+                    <button id="clearSearchBtn" onclick="clearSearch()" class="hidden text-slate-400 hover:text-slate-600 px-2" title="ล้างคำค้นหา">
+                        <i class="fa-solid fa-circle-xmark"></i>
+                    </button>
+                    <button onclick="handleSearch()" class="bg-orange-600 hover:bg-orange-500 text-white font-medium px-5 py-2.5 rounded-xl transition-colors shrink-0 text-sm sm:text-base shadow-sm">
+                        ค้นหา
+                    </button>
+                </div>
+
+                <!-- ปุ่มค้นหาด่วน (Quick Tags) -->
+                <div class="flex flex-wrap items-center justify-center gap-2 mt-4 text-xs sm:text-sm">
+                    <span class="text-slate-400">เมนูยอดฮิต:</span>
+                    <button onclick="quickSearch('กะเพรา')" class="px-3 py-1 rounded-full bg-white/10 hover:bg-orange-500 hover:text-white text-slate-200 transition-colors border border-white/10">🌶️ กะเพรา</button>
+                    <button onclick="quickSearch('ก๋วยเตี๋ยว')" class="px-3 py-1 rounded-full bg-white/10 hover:bg-orange-500 hover:text-white text-slate-200 transition-colors border border-white/10">🍜 ก๋วยเตี๋ยว</button>
+                    <button onclick="quickSearch('ข้าวมันไก่')" class="px-3 py-1 rounded-full bg-white/10 hover:bg-orange-500 hover:text-white text-slate-200 transition-colors border border-white/10">🍗 ข้าวมันไก่</button>
+                    <button onclick="quickSearch('ส้มตำ')" class="px-3 py-1 rounded-full bg-white/10 hover:bg-orange-500 hover:text-white text-slate-200 transition-colors border border-white/10">🥗 ส้มตำ/อีสาน</button>
+                    <button onclick="quickSearch('ของหวาน')" class="px-3 py-1 rounded-full bg-white/10 hover:bg-orange-500 hover:text-white text-slate-200 transition-colors border border-white/10">🍧 ของหวาน/ชาไข่มุก</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ส่วนเนื้อหาหลัก: ตัวกรองและการแสดงผลร้านอาหาร -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- แถบควบคุมหมวดหมู่และการเรียงลำดับ -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-200">
+            <!-- หมวดหมู่แนวอาหาร -->
+            <div class="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 no-scrollbar" id="categoryButtons">
+                <button data-cat="all" onclick="filterByCategory('all')" class="cat-btn active px-4 py-2 rounded-xl text-sm font-medium bg-orange-600 text-white shadow-sm shrink-0 transition-all">
+                    ทั้งหมด
+                </button>
+                <button data-cat="ตามสั่ง" onclick="filterByCategory('ตามสั่ง')" class="cat-btn px-4 py-2 rounded-xl text-sm font-medium bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 shrink-0 transition-all">
+                    🍳 อาหารตามสั่ง
+                </button>
+                <button data-cat="เส้น" onclick="filterByCategory('เส้น')" class="cat-btn px-4 py-2 rounded-xl text-sm font-medium bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 shrink-0 transition-all">
+                    🍜 ก๋วยเตี๋ยว/เมนูเส้น
+                </button>
+                <button data-cat="อีสาน" onclick="filterByCategory('อีสาน')" class="cat-btn px-4 py-2 rounded-xl text-sm font-medium bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 shrink-0 transition-all">
+                    🌶️ อาหารอีสาน
+                </button>
+                <button data-cat="ญี่ปุ่น" onclick="filterByCategory('ญี่ปุ่น')" class="cat-btn px-4 py-2 rounded-xl text-sm font-medium bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 shrink-0 transition-all">
+                    🍣 อาหารญี่ปุ่น
+                </button>
+                <button data-cat="ของหวาน" onclick="filterByCategory('ของหวาน')" class="cat-btn px-4 py-2 rounded-xl text-sm font-medium bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 shrink-0 transition-all">
+                    🧋 คาเฟ่/ของหวาน
+                </button>
+            </div>
+
+            <!-- ตัวเลือกการเรียงลำดับ -->
+            <div class="flex items-center justify-between sm:justify-end gap-3 shrink-0">
+                <span id="resultCount" class="text-sm text-slate-500 font-medium">พบ 0 ร้าน</span>
+                <div class="flex items-center gap-2">
+                    <label for="sortSelect" class="text-xs text-slate-500 hidden sm:inline">เรียงตาม:</label>
+                    <select id="sortSelect" onchange="renderRestaurants()" class="bg-white border border-slate-200 text-slate-700 text-sm rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500 font-medium">
+                        <option value="rating-desc" selected>⭐ คะแนนดาว (มาก → น้อย)</option>
+                        <option value="reviews-desc">💬 จำนวนรีวิวสูงสุด</option>
+                        <option value="price-asc">💰 ราคาเริ่มต้น (ถูก → แพง)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- พื้นที่แสดงรายการการ์ดร้านอาหาร -->
+        <div id="restaurantGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- การ์ดจะถูกสร้างด้วย JavaScript -->
+        </div>
+
+        <!-- กรณีค้นหาไม่พบ -->
+        <div id="emptyState" class="hidden text-center py-16 px-4 bg-white rounded-3xl border border-slate-200 shadow-sm">
+            <div class="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+                <i class="fa-solid fa-bowl-rice"></i>
+            </div>
+            <h3 class="text-lg font-bold text-slate-800 mb-1">ไม่พบร้านอาหารที่ตรงกับคำค้นหา</h3>
+            <p class="text-slate-500 text-sm mb-5">ลองเปลี่ยนคำค้นหา เช่น "กะเพรา", "ก๋วยเตี๋ยว" หรือดูร้านทั้งหมด</p>
+            <button onclick="resetFilters()" class="bg-orange-600 hover:bg-orange-500 text-white text-sm font-medium px-5 py-2.5 rounded-xl transition-colors">
+                แสดงร้านอาหารทั้งหมด
+            </button>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 mt-16 py-8 px-4">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-slate-500">
+            <div class="flex items-center gap-2">
+                <span class="font-bold text-slate-800">AroiRank</span>
+                <span>• เว็บไซต์รวบรวมรีวิวอาหารและจัดอันดับตามคะแนนดาว</span>
+            </div>
+            <div>
+                <span>พร้อมเชื่อมต่อสั่งเดลิเวอรีผ่าน <strong class="text-[#00B14F]">GrabFood</strong></span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Modal 1: ดูรายละเอียดรีวิวและให้คะแนนดาว -->
+    <div id="detailModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-3xl max-w-2xl w-full overflow-hidden shadow-2xl border border-slate-100 my-8 animate-fade-in">
+            <!-- รูปปกและปุ่มปิด -->
+            <div class="relative h-56 sm:h-64 bg-slate-200">
+                <img id="modalImg" src="" alt="" class="w-full h-full object-cover">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+                <button onclick="closeModal('detailModal')" class="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/50 hover:bg-black/70 text-white flex items-center justify-center backdrop-blur-md transition-colors">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+                <div class="absolute bottom-4 left-6 right-6 text-white">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span id="modalCategory" class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-orange-600 text-white"></span>
+                        <span id="modalStatusBadge" class="text-xs font-medium px-2.5 py-0.5 rounded-full bg-emerald-500/90 text-white"></span>
+                    </div>
+                    <h2 id="modalTitle" class="text-2xl sm:text-3xl font-bold"></h2>
+                </div>
+            </div>
+
+            <div class="p-6 max-h-[70vh] overflow-y-auto">
+                <!-- ข้อมูลสรุป: ดาว, ราคา, เวลาเปิดปิด -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6 bg-slate-50 p-4 rounded-2xl border border-slate-200/80">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-500 flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-star text-lg"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs text-slate-500">คะแนนรีวิว</div>
+                            <div class="font-bold text-slate-900"><span id="modalRating"></span> / 5.0 <span id="modalReviewCount" class="text-xs font-normal text-slate-500"></span></div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-baht-sign text-lg"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs text-slate-500">ช่วงราคา</div>
+                            <div id="modalPrice" class="font-bold text-slate-900"></div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
+                            <i class="fa-regular fa-clock text-lg"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs text-slate-500">เวลาเปิด-ปิด</div>
+                            <div id="modalHours" class="font-bold text-slate-900 text-sm"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- เมนูแนะนำ -->
+                <div class="mb-6">
+                    <h4 class="text-sm font-bold text-slate-800 mb-2">🍽️ เมนูแนะนำของร้าน</h4>
+                    <div id="modalMenus" class="flex flex-wrap gap-2"></div>
+                </div>
+
+                <!-- ปุ่มสั่ง GrabFood ใหญ่ -->
+                <div class="mb-6">
+                    <a id="modalGrabBtn" href="#" target="_blank" rel="noopener noreferrer" class="w-full flex items-center justify-center gap-2.5 bg-[#00B14F] hover:bg-[#009643] text-white font-bold py-3.5 px-6 rounded-2xl shadow-lg shadow-emerald-500/25 transition-all active:scale-[0.99]">
+                        <i class="fa-solid fa-motorcycle text-lg"></i>
+                        <span>สั่งอาหารร้านนี้ผ่าน GrabFood</span>
+                        <i class="fa-solid fa-arrow-up-right-from-square text-xs opacity-80"></i>
+                    </a>
+                </div>
+
+                <!-- ส่วนแสดงความคิดเห็นและเพิ่มรีวิว -->
+                <div class="border-t border-slate-200 pt-5">
+                    <h4 class="font-bold text-slate-800 mb-3">💬 รีวิวจากผู้ทานจริง</h4>
+                    
+                    <!-- ฟอร์มให้คะแนนดาวเพิ่ม -->
+                    <form onsubmit="submitQuickComment(event)" class="bg-slate-50 p-4 rounded-2xl border border-slate-200 mb-4">
+                        <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+                            <span class="text-xs font-semibold text-slate-700">ให้คะแนนร้านนี้:</span>
+                            <div class="flex items-center gap-1 text-lg" id="starSelector">
+                                <button type="button" onclick="setRatingInput(1)" class="star-input text-amber-400 hover:scale-110 transition-transform"><i class="fa-solid fa-star"></i></button>
+                                <button type="button" onclick="setRatingInput(2)" class="star-input text-amber-400 hover:scale-110 transition-transform"><i class="fa-solid fa-star"></i></button>
+                                <button type="button" onclick="setRatingInput(3)" class="star-input text-amber-400 hover:scale-110 transition-transform"><i class="fa-solid fa-star"></i></button>
+                                <button type="button" onclick="setRatingInput(4)" class="star-input text-amber-400 hover:scale-110 transition-transform"><i class="fa-solid fa-star"></i></button>
+                                <button type="button" onclick="setRatingInput(5)" class="star-input text-amber-400 hover:scale-110 transition-transform"><i class="fa-solid fa-star"></i></button>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <input type="text" id="commentInput" required placeholder="แชร์ความอร่อย เช่น กะเพราหมูกรอบเผ็ดสะใจ ให้เยอะมาก..." class="w-full text-sm px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                            <button type="submit" class="bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium px-4 py-2 rounded-xl shrink-0">ส่งรีวิว</button>
+                        </div>
+                    </form>
+
+                    <!-- รายการคอมเมนต์ -->
+                    <div id="modalCommentsList" class="space-y-3"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 2: เพิ่มร้านอาหารใหม่เข้าระบบ -->
+    <div id="addRestaurantModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 my-8">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-200 mb-4">
+                <h3 class="text-xl font-bold text-slate-900">✨ เพิ่มร้านเด็ด & เขียนรีวิว</h3>
+                <button onclick="closeModal('addRestaurantModal')" class="w-8 h-8 rounded-full hover:bg-slate-100 text-slate-500 flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <form onsubmit="handleAddRestaurant(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">ชื่อร้านอาหาร *</label>
+                    <input type="text" id="newRestName" required placeholder="เช่น กะเพราพริกแห้งป้าณี" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">หมวดหมู่ *</label>
+                        <select id="newRestCat" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+                            <option value="ตามสั่ง">อาหารตามสั่ง</option>
+                            <option value="เส้น">ก๋วยเตี๋ยว/เมนูเส้น</option>
+                            <option value="อีสาน">อาหารอีสาน</option>
+                            <option value="ญี่ปุ่น">อาหารญี่ปุ่น</option>
+                            <option value="ของหวาน">คาเฟ่/ของหวาน</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">ให้คะแนนดาว *</label>
+                        <select id="newRestRating" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+                            <option value="5.0">⭐⭐⭐⭐⭐ (5.0)</option>
+                            <option value="4.8">⭐⭐⭐⭐⭐ (4.8)</option>
+                            <option value="4.5">⭐⭐⭐⭐✨ (4.5)</option>
+                            <option value="4.0">⭐⭐⭐⭐ (4.0)</option>
+                            <option value="3.5">⭐⭐⭐✨ (3.5)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">ราคาเริ่มต้น (บาท) *</label>
+                        <input type="number" id="newRestMinPrice" required value="50" min="10" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">ราคาสูงสุด (บาท) *</label>
+                        <input type="number" id="newRestMaxPrice" required value="120" min="10" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">เวลาเปิด - ปิดร้าน *</label>
+                    <input type="text" id="newRestHours" required value="09:00 - 20:00 น." placeholder="เช่น 08:00 - 17:00 น." class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">เมนูแนะนำ (คั่นด้วยลูกน้ำ ,) *</label>
+                    <input type="text" id="newRestMenus" required placeholder="เช่น กะเพราหมูสับไข่ดาว, กะเพราเนื้อโคขุน" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">ความประทับใจ / รีวิวสั้นๆ *</label>
+                    <textarea id="newRestReview" required rows="2" placeholder="เล่าความอร่อยของร้านนี้..." class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"></textarea>
+                </div>
+
+                <div class="pt-2 flex justify-end gap-2">
+                    <button type="button" onclick="closeModal('addRestaurantModal')" class="px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100">ยกเลิก</button>
+                    <button type="submit" class="px-5 py-2.5 rounded-xl text-sm font-medium bg-orange-600 hover:bg-orange-500 text-white shadow-sm">บันทึกร้านและรีวิว</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- กล่องแจ้งเตือน Toast -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 hidden bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-xl flex items-center gap-3 text-sm font-medium transition-all">
+        <i class="fa-solid fa-circle-check text-emerald-400 text-lg"></i>
+        <span id="toastMsg">บันทึกข้อมูลสำเร็จ!</span>
+    </div>
+
+    <script>
+        // ข้อมูลร้านอาหารตั้งต้น (ครอบคลุมหลายแนวอาหาร โดยเฉพาะกะเพรา ก๋วยเตี๋ยว และอาหารยอดนิยม)
+        const initialRestaurants = [
+            {
+                id: 1,
+                name: "กะเพราพริกแห้งตาตี๋ (สูตรโบราณ)",
+                category: "ตามสั่ง",
+                rating: 4.9,
+                reviewCount: 342,
+                minPrice: 55,
+                maxPrice: 120,
+                openTime: "08:30",
+                closeTime: "16:30",
+                hoursText: "08:30 - 16:30 น. (หยุดวันอาทิตย์)",
+                image: "https://images.unsplash.com/photo-1562967914-608f82629710?auto=format&fit=crop&w=800&q=80",
+                menus: ["กะเพราหมูกรอบพริกแห้ง", "กะเพราเนื้อสับไข่ดาวเป็ด", "กะเพราหมูสับคลุกข้าว"],
+                grabQuery: "กะเพราพริกแห้ง",
+                comments: [
+                    { user: "นักชิมสายเผ็ด", rating: 5, text: "ผัดแห้งถึงเครื่องพริกกระเทียม ใบกะเพรากรอบหอมมาก ไม่ใส่ถั่วฝักยาว!" },
+                    { user: "Ploy_Foodie", rating: 5, text: "ไข่ดาวเป็ดเยิ้มๆ กินคู่กับกะเพราหมูกรอบคือที่สุด ให้เยอะสมราคา" }
+                ]
+            },
+            {
+                id: 2,
+                name: "ก๋วยเตี๋ยวเรืออยุธยา ลุงหนวด",
+                category: "เส้น",
+                rating: 4.8,
+                reviewCount: 289,
+                minPrice: 40,
+                maxPrice: 85,
+                openTime: "09:00",
+                closeTime: "18:00",
+                hoursText: "09:00 - 18:00 น. (เปิดทุกวัน)",
+                image: "https://images.unsplash.com/photo-1555126634-323283e090fa?auto=format&fit=crop&w=800&q=80",
+                menus: ["เส้นเล็กน้ำตกหมูตุ๋น", "บะหมี่เนื้อเปื่อย", "กากหมูเจียวกรอบ"],
+                grabQuery: "ก๋วยเตี๋ยวเรือ",
+                comments: [
+                    { user: "เด็กเส้น", rating: 5, text: "น้ำซุปเข้มข้นแทบไม่ต้องปรุงเพิ่ม กากหมูเจียวใหม่ทุกวัน กรอบสุดๆ" }
+                ]
+            },
+            {
+                id: 3,
+                name: "โคตรกะเพราถาดยักษ์ ไฟลุก",
+                category: "ตามสั่ง",
+                rating: 4.7,
+                reviewCount: 215,
+                minPrice: 65,
+                maxPrice: 180,
+                openTime: "10:00",
+                closeTime: "22:00",
+                hoursText: "10:00 - 22:00 น. (เปิดทุกวัน)",
+                image: "https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?auto=format&fit=crop&w=800&q=80",
+                menus: ["กะเพราถาดทะเลรวม", "กะเพราไก่กรอบ", "กะเพราหมูยออุบล"],
+                grabQuery: "กะเพราถาด",
+                comments: [
+                    { user: "หิวตอนดึก", rating: 5, text: "สั่งผ่านแกร็บบ่อยมาก ให้ปริมาณเยอะจุใจ รสชาติจัดจ้าน" },
+                    { user: "Tonkla", rating: 4, text: "เผ็ดสะใจ ใครไม่ทานเผ็ดแนะนำสั่งเผ็ดน้อยครับ" }
+                ]
+            },
+            {
+                id: 4,
+                name: "ส้มตำป้านาง แซ่บนัวอุดร",
+                category: "อีสาน",
+                rating: 4.8,
+                reviewCount: 410,
+                minPrice: 50,
+                maxPrice: 220,
+                openTime: "11:00",
+                closeTime: "21:30",
+                hoursText: "11:00 - 21:30 น. (เปิดทุกวัน)",
+                image: "https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=800&q=80",
+                menus: ["ตำปูปลาร้ากุ้งสด", "คอหมูย่างน้ำจิ้มแจ่ว", "ต้มแซ่บกระดูกอ่อน"],
+                grabQuery: "ส้มตำปูปลาร้า",
+                comments: [
+                    { user: "สายปลาร้า", rating: 5, text: "ปลาร้านัวมากไม่เหม็นคาว คอหมูย่างติดมันกำลังดี" }
+                ]
+            },
+            {
+                id: 5,
+                name: "ข้าวมันไก่ตอนไหหลำ เจ๊หงส์",
+                category: "ตามสั่ง",
+                rating: 4.6,
+                reviewCount: 195,
+                minPrice: 50,
+                maxPrice: 100,
+                openTime: "06:30",
+                closeTime: "14:30",
+                hoursText: "06:30 - 14:30 น. (หมดไวแนะนำสั่งก่อนเที่ยง)",
+                image: "https://images.unsplash.com/photo-1569058242253-92a9c755a0ec?auto=format&fit=crop&w=800&q=80",
+                menus: ["ข้าวมันไก่ต้มเนื้อน่อง", "ข้าวมันไก่ผสม", "ซุปฟักมะนาวดอง"],
+                grabQuery: "ข้าวมันไก่",
+                comments: [
+                    { user: "มื้อเช้าสำคัญ", rating: 5, text: "ไก่นุ่มชุ่มฉ่ำ ไม่ตบแบน ข้าวมันเรียงเม็ดหอมขิง น้ำจิ้มเต้าเจี้ยวเด็ด" }
+                ]
+            },
+            {
+                id: 6,
+                name: "กะเพราเนื้อวากิว & ไข่ดองซีอิ๊ว",
+                category: "ตามสั่ง",
+                rating: 4.5,
+                reviewCount: 128,
+                minPrice: 99,
+                maxPrice: 250,
+                openTime: "11:00",
+                closeTime: "21:00",
+                hoursText: "11:00 - 21:00 น.",
+                image: "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80",
+                menus: ["กะเพราเนื้อวากิวสับ", "กะเพราหมูคุโรบูตะ", "ไข่แดงดองซีอิ๊วเกาหลี"],
+                grabQuery: "กะเพราเนื้อ",
+                comments: [
+                    { user: "BeefLover", rating: 4, text: "เนื้อหอมมาก คลุกกับไข่ดองซีอิ๊วคือนิพพาน ราคาสูงหน่อยแต่คุ้ม" }
+                ]
+            },
+            {
+                id: 7,
+                name: "ราเมนซุปกระดูกหมูเข้มข้น Kenji",
+                category: "ญี่ปุ่น",
+                rating: 4.7,
+                reviewCount: 176,
+                minPrice: 129,
+                maxPrice: 280,
+                openTime: "11:00",
+                closeTime: "22:00",
+                hoursText: "11:00 - 22:00 น.",
+                image: "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=800&q=80",
+                menus: ["ทงคตสึราเมน", "เกี๊ยวซ่าทอดกรอบ", "ข้าวหน้าหมูชาชูพ่นไฟ"],
+                grabQuery: "ราเมน",
+                comments: [
+                    { user: "TokyoVibes", rating: 5, text: "น้ำซุปเคี่ยวจนข้นหอม หมูชาชูละลายในปาก" }
+                ]
+            },
+            {
+                id: 8,
+                name: "บิงซู & ชานมไข่มุกบราวน์ชูการ์",
+                category: "ของหวาน",
+                rating: 4.9,
+                reviewCount: 310,
+                minPrice: 45,
+                maxPrice: 169,
+                openTime: "10:30",
+                closeTime: "22:30",
+                hoursText: "10:30 - 22:30 น.",
+                image: "https://images.unsplash.com/photo-1558857563-b371033873b8?auto=format&fit=crop&w=800&q=80",
+                menus: ["ชานมไข่มุกพ่นไฟ", "บิงซูมะม่วงอกร่อง", "ฮันนี่โทสต์"],
+                grabQuery: "ชานมไข่มุก บิงซู",
+                comments: [
+                    { user: "หวานตัดขา", rating: 5, text: "ไข่มุกหนึบหนับหอมน้ำตาลทรายแดง กินคาวแล้วต้องต่อหวานร้านนี้" }
+                ]
+            }
+        ];
+
+        // โหลดข้อมูลจาก LocalStorage หรือใช้ค่าเริ่มต้น
+        let restaurants = JSON.parse(localStorage.getItem('aroiRankData')) || initialRestaurants;
+        let currentCategory = 'all';
+        let currentSearch = '';
+        let activeRestaurantId = null;
+        let selectedUserRating = 5;
+
+        // ฟังก์ชันตรวจสอบสถานะเปิด-ปิดร้านคร่าวๆ จากเวลาปัจจุบัน
+        function checkOpenStatus(openStr, closeStr) {
+            if (!openStr || !closeStr) return { isOpen: true, label: "เปิดให้บริการ" };
+            const now = new Date();
+            const currentMins = now.getHours() * 60 + now.getMinutes();
+            
+            const [openH, openM] = openStr.split(':').map(Number);
+            const [closeH, closeM] = closeStr.split(':').map(Number);
+            const openMins = openH * 60 + openM;
+            const closeMins = closeH * 60 + closeM;
+
+            if (currentMins >= openMins && currentMins <= closeMins) {
+                return { isOpen: true, label: "เปิดอยู่" };
+            } else {
+                return { isOpen: false, label: "ปิดแล้ว" };
+            }
+        }
+
+        // สร้างลิงก์ค้นหาร้านหรือเมนูบน GrabFood ประเทศไทย
+        function getGrabFoodUrl(restaurant) {
+            const query = encodeURIComponent(restaurant.name);
+            return `https://food.grab.com/th/th/restaurants?search=${query}`;
+        }
+
+        // สร้างไอคอนดาวตามคะแนน
+        function renderStars(rating) {
+            let html = '';
+            const fullStars = Math.floor(rating);
+            const hasHalf = rating % 1 >= 0.4;
+            for (let i = 0; i < fullStars; i++) {
+                html += '<i class="fa-solid fa-star text-amber-400"></i>';
+            }
+            if (hasHalf) {
+                html += '<i class="fa-solid fa-star-half-stroke text-amber-400"></i>';
+            }
+            const emptyStars = 5 - fullStars - (hasHalf ? 1 : 0);
+            for (let i = 0; i < emptyStars; i++) {
+                html += '<i class="fa-regular fa-star text-slate-300"></i>';
+            }
+            return html;
+        }
+
+        // ฟังก์ชันหลักในการกรอง เรียงลำดับ และแสดงผลการ์ดร้านอาหาร
+        function renderRestaurants() {
+            const grid = document.getElementById('restaurantGrid');
+            const emptyState = document.getElementById('emptyState');
+            const resultCount = document.getElementById('resultCount');
+            const sortBy = document.getElementById('sortSelect').value;
+
+            // 1. กรองตามหมวดหมู่และคำค้นหา (ค้นได้ทั้งชื่อร้าน, หมวดหมู่, และเมนูแนะนำ)
+            let filtered = restaurants.filter(rest => {
+                const matchCat = currentCategory === 'all' || rest.category === currentCategory;
+                const q = currentSearch.toLowerCase().trim();
+                const matchSearch = !q || 
+                    rest.name.toLowerCase().includes(q) ||
+                    rest.category.toLowerCase().includes(q) ||
+                    rest.menus.some(m => m.toLowerCase().includes(q));
+                return matchCat && matchSearch;
+            });
+
+            // 2. เรียงลำดับ (ค่าเริ่มต้นคือ คะแนนดาว มาก -> น้อย)
+            filtered.sort((a, b) => {
+                if (sortBy === 'rating-desc') {
+                    if (b.rating !== a.rating) return b.rating - a.rating;
+                    return b.reviewCount - a.reviewCount; // ถ้าดาวเท่ากัน ให้ร้านที่คนรีวิวเยอะกว่าขึ้นก่อน
+                } else if (sortBy === 'reviews-desc') {
+                    return b.reviewCount - a.reviewCount;
+                } else if (sortBy === 'price-asc') {
+                    return a.minPrice - b.minPrice;
+                }
+                return 0;
+            });
+
+            resultCount.textContent = `พบ ${filtered.length} ร้าน`;
+
+            if (filtered.length === 0) {
+                grid.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            
+            grid.innerHTML = filtered.map((rest, index) => {
+                const status = checkOpenStatus(rest.openTime, rest.closeTime);
+                const grabUrl = getGrabFoodUrl(rest);
+                const rankBadge = sortBy === 'rating-desc' && index < 3 
+                    ? `<div class="absolute top-3 left-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md flex items-center gap-1">
+                        <i class="fa-solid fa-crown text-[10px]"></i> อันดับ #${index + 1}
+                       </div>` 
+                    : '';
+
+                return `
+                <article class="group bg-white rounded-3xl border border-slate-200/90 overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between">
+                    <div>
+                        <!-- รูปภาพอาหาร -->
+                        <div class="relative h-48 bg-slate-200 overflow-hidden cursor-pointer" onclick="openDetailModal(${rest.id})">
+                            <img 
+                                src="${rest.image}" 
+                                alt="${rest.name}" 
+                                onerror="this.src='https://placehold.co/800x500/ffedd5/ea580c?text=${encodeURIComponent(rest.name)}'"
+                                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            >
+                            ${rankBadge}
+                            <div class="absolute top-3 right-3 bg-slate-900/75 backdrop-blur-md text-white text-xs font-medium px-2.5 py-1 rounded-full">
+                                ${rest.category}
+                            </div>
+                            <!-- ป้ายคะแนนดาวเด่นๆ มุมขวาล่างรูป -->
+                            <div class="absolute bottom-3 right-3 bg-white/95 backdrop-blur-md px-3 py-1 rounded-2xl shadow-md flex items-center gap-1.5">
+                                <i class="fa-solid fa-star text-amber-400 text-sm"></i>
+                                <span class="font-bold text-slate-900 text-sm">${rest.rating.toFixed(1)}</span>
+                                <span class="text-xs text-slate-500">(${rest.reviewCount})</span>
+                            </div>
+                        </div>
+
+                        <!-- รายละเอียดร้าน -->
+                        <div class="p-5">
+                            <div class="flex items-start justify-between gap-2 mb-2">
+                                <h3 onclick="openDetailModal(${rest.id})" class="font-bold text-lg text-slate-900 group-hover:text-orange-600 transition-colors cursor-pointer line-clamp-1">
+                                    ${rest.name}
+                                </h3>
+                            </div>
+
+                            <!-- แสดงดาวและรีวิวล่าสุด -->
+                            <div class="flex items-center gap-2 text-xs mb-3">
+                                <div class="flex items-center gap-0.5">${renderStars(rest.rating)}</div>
+                                <span class="text-slate-400">•</span>
+                                <span class="text-slate-600 font-medium">${rest.reviewCount} รีวิว</span>
+                            </div>
+
+                            <!-- เมนูแนะนำ -->
+                            <div class="flex flex-wrap gap-1.5 mb-4">
+                                ${rest.menus.slice(0, 3).map(menu => `
+                                    <span class="text-xs bg-orange-50 text-orange-700 border border-orange-100 px-2.5 py-1 rounded-lg font-medium">
+                                        ${menu}
+                                    </span>
+                                `).join('')}
+                            </div>
+
+                            <!-- ข้อมูลราคา และ เวลาเปิด-ปิด -->
+                            <div class="space-y-1.5 text-xs sm:text-sm text-slate-600 bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-slate-500 flex items-center gap-1.5">
+                                        <i class="fa-solid fa-tag text-orange-500 w-4 text-center"></i> ช่วงราคา:
+                                    </span>
+                                    <span class="font-semibold text-slate-800">฿${rest.minPrice} - ฿${rest.maxPrice}</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-slate-500 flex items-center gap-1.5">
+                                        <i class="fa-regular fa-clock text-blue-500 w-4 text-center"></i> เวลาเปิด-ปิด:
+                                    </span>
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="font-medium text-slate-800 text-xs">${rest.hoursText.split(' ')[0]} - ${rest.hoursText.split(' ')[2] || ''}</span>
+                                        <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full ${status.isOpen ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">
+                                            ${status.label}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ปุ่มด้านล่างการ์ด: ดูรีวิว & สั่ง GrabFood -->
+                    <div class="px-5 pb-5 pt-1 flex items-center gap-2.5">
+                        <button onclick="openDetailModal(${rest.id})" class="flex-1 py-2.5 px-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-xs sm:text-sm transition-colors flex items-center justify-center gap-1.5">
+                            <i class="fa-regular fa-comment-dots"></i>
+                            <span>อ่าน/ให้ดาว</span>
+                        </button>
+                        <a href="${grabUrl}" target="_blank" rel="noopener noreferrer" class="flex-1 py-2.5 px-3 rounded-xl bg-[#00B14F] hover:bg-[#009643] text-white font-semibold text-xs sm:text-sm shadow-sm shadow-emerald-500/20 transition-all flex items-center justify-center gap-1.5 active:scale-95">
+                            <i class="fa-solid fa-motorcycle"></i>
+                            <span>สั่ง GrabFood</span>
+                        </a>
+                    </div>
+                </article>
+                `;
+            }).join('');
+        }
+
+        // จัดการการพิมพ์ค้นหา
+        function handleSearch() {
+            const input = document.getElementById('searchInput');
+            const clearBtn = document.getElementById('clearSearchBtn');
+            currentSearch = input.value;
+            
+            if (currentSearch.length > 0) {
+                clearBtn.classList.remove('hidden');
+            } else {
+                clearBtn.classList.add('hidden');
+            }
+            renderRestaurants();
+        }
+
+        // ค้นหาด่วนจากปุ่ม Tag
+        function quickSearch(keyword) {
+            const input = document.getElementById('searchInput');
+            input.value = keyword;
+            currentCategory = 'all';
+            updateCategoryButtonsUI();
+            handleSearch();
+            // เลื่อนหน้าจอลงมาดูผลลัพธ์อย่างนุ่มนวล
+            document.getElementById('restaurantGrid').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function clearSearch() {
+            document.getElementById('searchInput').value = '';
+            handleSearch();
+        }
+
+        function filterByCategory(cat) {
+            currentCategory = cat;
+            updateCategoryButtonsUI();
+            renderRestaurants();
+        }
+
+        function updateCategoryButtonsUI() {
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                if (btn.dataset.cat === currentCategory) {
+                    btn.className = 'cat-btn active px-4 py-2 rounded-xl text-sm font-medium bg-orange-600 text-white shadow-sm shrink-0 transition-all';
+                } else {
+                    btn.className = 'cat-btn px-4 py-2 rounded-xl text-sm font-medium bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 shrink-0 transition-all';
+                }
+            });
+        }
+
+        function resetFilters() {
+            currentCategory = 'all';
+            document.getElementById('searchInput').value = '';
+            document.getElementById('sortSelect').value = 'rating-desc';
+            updateCategoryButtonsUI();
+            handleSearch();
+        }
+
+        // เปิด Modal รายละเอียดร้าน
+        function openDetailModal(id) {
+            const rest = restaurants.find(r => r.id === id);
+            if (!rest) return;
+            activeRestaurantId = id;
+
+            document.getElementById('modalImg').src = rest.image;
+            document.getElementById('modalCategory').textContent = rest.category;
+            document.getElementById('modalTitle').textContent = rest.name;
+            document.getElementById('modalRating').textContent = rest.rating.toFixed(1);
+            document.getElementById('modalReviewCount').textContent = `(${rest.reviewCount} รีวิว)`;
+            document.getElementById('modalPrice').textContent = `฿${rest.minPrice} - ฿${rest.maxPrice}`;
+            document.getElementById('modalHours').textContent = rest.hoursText;
+            document.getElementById('modalGrabBtn').href = getGrabFoodUrl(rest);
+
+            const status = checkOpenStatus(rest.openTime, rest.closeTime);
+            const badge = document.getElementById('modalStatusBadge');
+            badge.textContent = status.label;
+            badge.className = `text-xs font-medium px-2.5 py-0.5 rounded-full text-white ${status.isOpen ? 'bg-emerald-500/90' : 'bg-rose-500/90'}`;
+
+            document.getElementById('modalMenus').innerHTML = rest.menus.map(m => 
+                `<span class="text-xs bg-orange-50 text-orange-700 border border-orange-200 px-3 py-1.5 rounded-xl font-medium">${m}</span>`
+            ).join('');
+
+            setRatingInput(5);
+            renderModalComments(rest);
+            document.getElementById('detailModal').classList.remove('hidden');
+        }
+
+        function renderModalComments(rest) {
+            const list = document.getElementById('modalCommentsList');
+            if (!rest.comments || rest.comments.length === 0) {
+                list.innerHTML = `<p class="text-sm text-slate-400 text-center py-4">ยังไม่มีความคิดเห็น เป็นคนแรกที่รีวิวร้านนี้เลย!</p>`;
+                return;
+            }
+            list.innerHTML = rest.comments.map(c => `
+                <div class="bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-sm">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="font-bold text-xs text-slate-800"><i class="fa-solid fa-circle-user text-slate-400 mr-1"></i> ${c.user}</span>
+                        <div class="text-xs flex items-center gap-0.5">${renderStars(c.rating)}</div>
+                    </div>
+                    <p class="text-sm text-slate-600">${c.text}</p>
+                </div>
+            `).join('');
+        }
+
+        function setRatingInput(val) {
+            selectedUserRating = val;
+            const stars = document.querySelectorAll('.star-input');
+            stars.forEach((btn, idx) => {
+                if (idx < val) {
+                    btn.classList.remove('text-slate-300');
+                    btn.classList.add('text-amber-400');
+                } else {
+                    btn.classList.remove('text-amber-400');
+                    btn.classList.add('text-slate-300');
+                }
+            });
+        }
+
+        // ส่งรีวิวเพิ่มในร้านเดิมและคำนวณค่าเฉลี่ยดาวใหม่ทันที
+        function submitQuickComment(e) {
+            e.preventDefault();
+            const input = document.getElementById('commentInput');
+            const text = input.value.trim();
+            if (!text || !activeRestaurantId) return;
+
+            const rest = restaurants.find(r => r.id === activeRestaurantId);
+            if (rest) {
+                // คำนวณคะแนนเฉลี่ยใหม่
+                const totalScore = (rest.rating * rest.reviewCount) + selectedUserRating;
+                rest.reviewCount += 1;
+                rest.rating = Number((totalScore / rest.reviewCount).toFixed(1));
+
+                rest.comments.unshift({
+                    user: "ผู้ใช้งานทั่วไป (คุณ)",
+                    rating: selectedUserRating,
+                    text: text
+                });
+
+                saveData();
+                input.value = '';
+                document.getElementById('modalRating').textContent = rest.rating.toFixed(1);
+                document.getElementById('modalReviewCount').textContent = `(${rest.reviewCount} รีวิว)`;
+                renderModalComments(rest);
+                renderRestaurants();
+                showToast("ขอบคุณสำหรับรีวิว! อัปเดตคะแนนดาวเรียบร้อย");
+            }
+        }
+
+        function openAddReviewModal() {
+            document.getElementById('addRestaurantModal').classList.remove('hidden');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+
+        // เพิ่มร้านอาหารใหม่เข้าระบบ
+        function handleAddRestaurant(e) {
+            e.preventDefault();
+            const name = document.getElementById('newRestName').value.trim();
+            const category = document.getElementById('newRestCat').value;
+            const rating = parseFloat(document.getElementById('newRestRating').value);
+            const minPrice = parseInt(document.getElementById('newRestMinPrice').value);
+            const maxPrice = parseInt(document.getElementById('newRestMaxPrice').value);
+            const hoursText = document.getElementById('newRestHours').value.trim();
+            const menus = document.getElementById('newRestMenus').value.split(',').map(m => m.trim()).filter(Boolean);
+            const reviewText = document.getElementById('newRestReview').value.trim();
+
+            const newRestaurant = {
+                id: Date.now(),
+                name,
+                category,
+                rating,
+                reviewCount: 1,
+                minPrice,
+                maxPrice,
+                openTime: "08:00",
+                closeTime: "21:00",
+                hoursText,
+                image: `https://placehold.co/800x500/ffedd5/ea580c?text=${encodeURIComponent(name)}`,
+                menus: menus.length > 0 ? menus : ["เมนูแนะนำของทางร้าน"],
+                grabQuery: name,
+                comments: [{ user: "ผู้รีวิวคนแรก", rating, text: reviewText }]
+            };
+
+            restaurants.unshift(newRestaurant);
+            saveData();
+            closeModal('addRestaurantModal');
+            e.target.reset();
+            renderRestaurants();
+            showToast("เพิ่มร้านอาหารใหม่และจัดอันดับเรียบร้อย!");
+        }
+
+        function saveData() {
+            localStorage.setItem('aroiRankData', JSON.stringify(restaurants));
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMsg').textContent = msg;
+            toast.classList.remove('hidden');
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 3000);
+        }
+
+        // เริ่มต้นทำงานเมื่อโหลดหน้าเว็บเสร็จ
+        window.addEventListener('DOMContentLoaded', () => {
+            renderRestaurants();
+        });
+    </script>
+</body>
+</html>
